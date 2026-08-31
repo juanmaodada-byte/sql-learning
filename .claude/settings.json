@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm run dev -- --port 5174 --strictPort)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:5174/)",
+      "Bash(curl -s http://localhost:5174/)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"name='node.exe'\")",
+      "Bash(curl -s -o /dev/null -w \"5174 check: HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:5174/)",
+      "PowerShell(node \"d:\\\\Side Projects\\\\Developing\\\\sql-learning\\\\node_modules\\\\vite\\\\bin\\\\vite.js\" --port 5174 --strictPort)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:5174/src/main.tsx)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const src=fs.readFileSync\\('src/data/chapters.ts','utf8'\\);const ids=[...src.matchAll\\(/^\\\\s*id:\\\\s*\\(\\\\d+\\)/gm\\)].map\\(m=>Number\\(m[1]\\)\\);console.log\\('chapter ids:',ids.join\\(','\\)\\);console.log\\('count:',ids.length\\);\")",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" --max-time 5 http://localhost:5174/)",
+      "Bash(curl -s http://localhost:5174/src/main.tsx)",
+      "Bash(curl -s -o /dev/null -w \"EntryPage: HTTP %{http_code}\\\\n\" --max-time 5 \"http://localhost:5174/src/pages/EntryPage.tsx\")",
+      "Bash(curl -s -o /dev/null -w \"App: HTTP %{http_code}\\\\n\" --max-time 5 \"http://localhost:5174/src/app/App.tsx\")",
+      "Bash(curl -s -o /dev/null -w \"progressStore: HTTP %{http_code}\\\\n\" --max-time 5 \"http://localhost:5174/src/state/progressStore.ts\")",
+      "Bash(curl -s -o /dev/null -w \"CSS: HTTP %{http_code}\\\\n\" --max-time 5 \"http://localhost:5174/src/styles/global.css\")",
+      "Bash(ls -la \"C:/Users/Juanmaodada/.claude/projects/d--Side-Projects-Developing-sql-learning/memory/\" 2>/dev/null; echo \"---MEMORY.md---\"; cat \"C:/Users/Juanmaodada/.claude/projects/d--Side-Projects-Developing-sql-learning/memory/MEMORY.md\" 2>/dev/null || echo \"no memory yet\")",
+      "Read(//c/Users/Juanmaodada/.claude/projects/d--Side-Projects-Developing-sql-learning/memory/**)",
+      "Bash(curl -s -o /dev/null -w \"5174: HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:5174/)",
+      "Bash(curl -s -o /dev/null -w \"5175: HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:5175/)",
+      "Bash(curl -s http://localhost:5175/)",
+      "Bash(curl -s -o /dev/null -w \"main.tsx: HTTP %{http_code}\\\\n\" http://localhost:5175/src/main.tsx)",
+      "Bash(curl -s -o /dev/null -w \"sql.js wasm: HTTP %{http_code}\\\\n\" http://localhost:5175/node_modules/sql.js/dist/sql-wasm.wasm)"
+    ]
+  }
+}

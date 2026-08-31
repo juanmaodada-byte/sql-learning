@@ -1,0 +1,11 @@
+node_modules
+dist
+.progress-data
+server/.progress-data
+*.local
+.DS_Store
+
+# Keep planning and story documents local.
+chapter-stories.md
+development-plan.md
+product-plan.md
