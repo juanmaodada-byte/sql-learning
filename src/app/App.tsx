@@ -2,17 +2,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { chapters } from "../data/chapters";
 import { characterById } from "../data/characters";
 import { LessonPage } from "../pages/LessonPage";
-import { EntryPage } from "../pages/EntryPage";
 import { ProgressSummary } from "../components/ProgressSummary";
 import {
-  createInitialProgress,
   hydrateFromRemote,
-  loadMode,
-  loadModeFromRemote,
   loadProgress,
   saveDraft,
   saveLastChapter,
-  saveMode,
   saveProgress,
   type ProgressMode,
   type ProgressState,
@@ -27,18 +22,13 @@ function getViewFromHash(): View {
   return match ? { type: "lesson", chapterId: Number(match[1]) } : { type: "home" };
 }
 
-function countCompleted(progress: ProgressState): number {
-  return Object.values(progress.chapters).filter((chapterProgress) => chapterProgress.completed).length;
-}
-
 export function App() {
-  const [mode, setMode] = useState<ProgressMode | null>(() => loadMode());
+  const mode: ProgressMode = "official";
   // 每次启动统一进入任务大厅；章节只在用户主动点击后打开。
   const [view, setView] = useState<View>({ type: "home" });
   const [progress, setProgress] = useState<ProgressState>(() =>
-    mode ? loadProgress(mode, chapters.length) : createInitialProgress(chapters.length)
+    loadProgress(mode, chapters.length)
   );
-  const [devUnlockAll, setDevUnlockAll] = useState(false);
   // 记录已完成远端恢复的版本，避免切换版本时把空进度写回覆盖磁盘数据。
   const hydratedModeRef = useRef<ProgressMode | null>(null);
   const progressRef = useRef(progress);
@@ -64,19 +54,6 @@ export function App() {
       window.history.scrollRestoration = "auto";
     };
   }, []);
-  useEffect(() => {
-    if (mode !== null) return;
-    let cancelled = false;
-    loadModeFromRemote().then((remoteMode) => {
-      if (cancelled || !remoteMode) return;
-      setMode(remoteMode);
-      setProgress(loadProgress(remoteMode, chapters.length));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [mode]);
-
   // 启动后从后端（文件落盘、跨来源）拉取进度并与本地合并，确保重启/换端口不丢进度。
   useEffect(() => {
     if (!mode) return;
@@ -114,7 +91,7 @@ export function App() {
   }, [mode]);
 
   // 开发解锁只在试玩版生效，切回正式版时绝不会泄漏为"全部解锁"。
-  const devUnlockAllActive = mode === "demo" && devUnlockAll;
+  const devUnlockAllActive = false;
 
   function openChapter(chapterId: number) {
     setView({ type: "lesson", chapterId });
@@ -132,8 +109,6 @@ export function App() {
   }
 
   function selectMode(nextMode: ProgressMode) {
-    saveMode(nextMode);
-    setMode(nextMode);
     setProgress(loadProgress(nextMode, chapters.length));
     setView({ type: "home" });
     // 清除残留的 #/lessons/N，保证选择版本后落在该版本的任务大厅。
@@ -141,30 +116,11 @@ export function App() {
   }
 
   function switchToEntry() {
-    // 不改写 localStorage 里的 mode：刷新后仍进入上次选择的版本；mode 只在 selectMode 时更新。
-    setMode(null);
     setView({ type: "home" });
   }
 
-  if (mode === null) {
-    const official = loadProgress("official", chapters.length);
-    const demo = loadProgress("demo", chapters.length);
-    return (
-      <EntryPage
-        total={chapters.length}
-        official={{
-          completed: countCompleted(official),
-          unlocked: official.unlockedChapterIds.length,
-        }}
-        demo={{
-          completed: countCompleted(demo),
-          unlocked: demo.unlockedChapterIds.length,
-        }}
-        onSelectOfficial={() => selectMode("official")}
-        onSelectDemo={() => selectMode("demo")}
-      />
-    );
-  }
+  void selectMode;
+  void switchToEntry;
 
   if (view.type === "lesson") {
     const chapter = chapters.find((item) => item.id === view.chapterId);
@@ -206,19 +162,6 @@ export function App() {
           <span>当前学习路径</span>
           <strong>基础篇 · 第 {completedChapterIds.size + 1} 节</strong>
           <small>{devUnlockAllActive ? "开发模式：章节与任务均已解锁" : "完成当前任务后解锁下一节"}</small>
-          {mode === "demo" ? (
-            <label className="dev-toggle">
-              <input
-                checked={devUnlockAll}
-                onChange={(event) => setDevUnlockAll(event.target.checked)}
-                type="checkbox"
-              />
-              <span>开发模式：解锁全部章节与任务</span>
-            </label>
-          ) : null}
-          <button className="version-switch" type="button" onClick={switchToEntry}>
-            切换版本
-          </button>
         </div>
       </section>
 
