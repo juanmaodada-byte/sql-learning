@@ -253,7 +253,7 @@ function buildKnowledgeExamples(chapter: Chapter): KnowledgeExample[] {
   }
   if (point.includes("自连接")) {
     return [example(
-      "SELECT learner.full_name, tutor.full_name AS tutor_full_name FROM learners learner LEFT JOIN learners tutor ON learner.tutor_ref = tutor.learner_code;",
+      "SELECT learner.full_name, tutor.full_name AS tutor_full_name FROM learners learner INNER JOIN learners tutor ON learner.tutor_ref = tutor.learner_code;",
       "这条语句表示：把 learners 表同时当作 learner 和 tutor 两个角色使用，用 learner.tutor_ref 匹配 tutor.learner_code，从而在一行中展示学员和他的导师姓名。",
       "learner.full_name、tutor.full_name、learner.tutor_ref、tutor.learner_code（字段）",
       "learners（同一张表的两个角色）",
@@ -423,7 +423,7 @@ function buildSyntaxTemplate(chapter: Chapter) {
   if (point.includes("distinct") || point.includes("去重")) return "SELECT DISTINCT 字段 FROM 表;";
   if (point.includes("自我外连接")) return "SELECT 字段 FROM 表 WHERE 关系字段 IS NULL;";
   if (point.includes("外连接") || point.includes("left join")) return "SELECT 表A.字段 FROM 表A LEFT JOIN 表B ON 关联条件 WHERE 表B.id IS NULL;";
-  if (point.includes("自连接")) return "SELECT 当前表.字段, 上级表.字段 FROM 表 当前表 LEFT JOIN 表 上级表 ON 关联条件;";
+  if (point.includes("自连接")) return "SELECT 当前表.字段, 上级表.字段 FROM 表 当前表 INNER JOIN 表 上级表 ON 关联条件;";
   if (point.includes("join") || point.includes("连接")) return "SELECT 表A.字段, 表B.字段 FROM 表A INNER JOIN 表B ON 表A.id = 表B.student_id;";
   if (point.includes("group by + having")) return "SELECT 分组字段, COUNT(*) FROM 表 GROUP BY 分组字段 HAVING 聚合条件;";
   if (point.includes("聚合函数")) return "SELECT SUM(字段), AVG(字段), MAX(字段) FROM 表;";
@@ -510,14 +510,20 @@ export function LessonPage({ chapter, isLocked, unlockAllTasks = false, onBack, 
   const [sql, setSql] = useState("");
   const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sqlRef = useRef(sql);
-  sqlRef.current = sql;
   const onDraftChangeRef = useRef(onDraftChange);
-  onDraftChangeRef.current = onDraftChange;
   const [result, setResult] = useState<SqlRunResult | null>(null);
   const [evaluation, setEvaluation] = useState<TaskEvaluation | null>(null);
   const [hintVisible, setHintVisible] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+
+  // 让 ref 始终持有最新值：在 effect 中写入，而不是在渲染期写入。
+  useEffect(() => {
+    sqlRef.current = sql;
+  }, [sql]);
+  useEffect(() => {
+    onDraftChangeRef.current = onDraftChange;
+  }, [onDraftChange]);
 
   // 离开章节或卸载前，把未提交的 SQL 草稿兜底落盘，避免重启后丢失。
   useEffect(() => {
@@ -533,7 +539,48 @@ export function LessonPage({ chapter, isLocked, unlockAllTasks = false, onBack, 
     draftTimer.current = setTimeout(() => onDraftChangeRef.current?.(`${chapter?.id ?? 0}-${activeTaskId}`, value), 400);
   }
 
-  if (!chapter || isLocked) {
+  // 锁定视图或章节不存在时不渲染课程；但所有 Hook 必须在条件返回之前执行。
+  const isLockedView = !chapter || isLocked;
+
+  // 任务相关派生值：锁定视图下用安全兜底（仅供 Hook 的依赖与判断使用）。
+  const tasks = chapter
+    ? applyChapterTaskStories(chapter.tasks ?? [
+        { id: 1, label: "入门热身", title: chapter.title, story: chapter.story, requirement: chapter.requirement },
+        { id: 2, label: "进阶任务", title: `${chapter.title} · 进阶`, story: "基础口径已经确认。现在把业务方补充的条件加入查询，保持结果范围准确。", requirement: chapter.requirement },
+        { id: 3, label: "综合挑战", title: `${chapter.title} · 综合挑战`, story: "最后一次交付前，请按完整业务口径输出结果，并检查字段、顺序和边界记录。", requirement: chapter.requirement },
+      ], chapter.id)
+    : [];
+  const activeTask = tasks.find((task) => task.id === activeTaskId) ?? tasks[0];
+  const taskKey = activeTask ? `${chapter?.id ?? 0}-${activeTask.id}` : "locked";
+  const savedDraft = activeTask ? initialDrafts[taskKey] : undefined;
+  const isLegacyAnswerDraft = Boolean(
+    activeTask &&
+      savedDraft &&
+      [activeTask.requirement.initialSql, activeTask.requirement.expectedSql].some(
+        (answer) => answer.trim() === savedDraft.trim(),
+      ),
+  );
+
+  // 切换任务 / 章节时重置编辑器状态：采用 React 官方推荐的“根据变化调整 state”写法，
+  // 避免在 effect 里同步 setState 造成级联渲染。
+  const [prevTaskKey, setPrevTaskKey] = useState<string | null>(null);
+  if (prevTaskKey !== taskKey) {
+    setPrevTaskKey(taskKey);
+    setSql(isLegacyAnswerDraft ? "" : savedDraft ?? "");
+    setResult(null);
+    setEvaluation(null);
+    setHintVisible(false);
+    setHintUsed(false);
+  }
+
+  // 命中历史答案的旧草稿从存储中清掉（纯副作用，放在 effect 中执行）。
+  useEffect(() => {
+    if (isLegacyAnswerDraft) {
+      onDraftChangeRef.current?.(taskKey, "");
+    }
+  }, [isLegacyAnswerDraft, taskKey]);
+
+  if (isLockedView) {
     return (
       <main className="lesson-shell">
         <button className="back-button" onClick={onBack} type="button">
@@ -549,37 +596,13 @@ export function LessonPage({ chapter, isLocked, unlockAllTasks = false, onBack, 
     );
   }
 
-  const activeChapter = chapter;
-  const tasks = applyChapterTaskStories(activeChapter.tasks ?? [
-    { id: 1, label: "入门热身", title: activeChapter.title, story: activeChapter.story, requirement: activeChapter.requirement },
-    { id: 2, label: "进阶任务", title: `${activeChapter.title} · 进阶`, story: "基础口径已经确认。现在把业务方补充的条件加入查询，保持结果范围准确。", requirement: activeChapter.requirement },
-    { id: 3, label: "综合挑战", title: `${activeChapter.title} · 综合挑战`, story: "最后一次交付前，请按完整业务口径输出结果，并检查字段、顺序和边界记录。", requirement: activeChapter.requirement },
-  ], activeChapter.id);
-  const activeTask = tasks.find((task) => task.id === activeTaskId) ?? tasks[0];
+  // 走到这里说明章节存在且已解锁，activeChapter 一定有值。
+  const activeChapter = chapter as Chapter;
   const chapterProgress = loadProgress(mode, totalChapters).chapters[String(activeChapter.id)];
   // completedTasks 是唯一的任务解锁依据；章节 completed 只表示三项任务均已完成，
   // 不再把缺少明细的旧数据误判为当前三个任务都可进入。
   const completedTasks = chapterProgress?.completedTasks ?? [];
   const taskRequirement = activeTask.requirement;
-  const taskKey = `${activeChapter.id}-${activeTask.id}`;
-  const savedDraft = initialDrafts[taskKey];
-  const isLegacyAnswerDraft = Boolean(
-    savedDraft &&
-      [taskRequirement.initialSql, taskRequirement.expectedSql].some(
-        (answer) => answer.trim() === savedDraft.trim(),
-      ),
-  );
-  useEffect(() => {
-    // 编辑器默认留空，只有用户保存过的草稿才允许恢复，避免直接展示答案。
-    setSql(isLegacyAnswerDraft ? "" : savedDraft ?? "");
-    if (isLegacyAnswerDraft) {
-      onDraftChangeRef.current?.(taskKey, "");
-    }
-    setResult(null);
-    setEvaluation(null);
-    setHintVisible(false);
-    setHintUsed(false);
-  }, [isLegacyAnswerDraft, savedDraft, taskKey]);
   const character = characterById[activeChapter.characterId];
   const tableResult: SqlTableResult | null = result?.type === "rows" ? result : null;
   const errorMessage = result?.type === "error" ? result.message : null;

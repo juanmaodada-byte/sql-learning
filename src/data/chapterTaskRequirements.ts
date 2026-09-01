@@ -29,7 +29,7 @@ export const chapterExtraTaskRequirements: Record<number, [TaskRequirement, Task
   ],
   2: [
     requirement({ goal: "查询销售部门员工的姓名、岗位和部门。", sql: "SELECT name, job_title, department FROM employees WHERE department = '销售部';", keyword: "where" }),
-    requirement({ goal: "查询数据部的数据分析师姓名与入职日期。", sql: "SELECT name, hire_date FROM employees WHERE department = '数据部' AND job_title = '数据分析师';", keyword: "where" }),
+    requirement({ goal: "查询岗位为数据分析师的员工姓名与入职日期。", sql: "SELECT name, hire_date FROM employees WHERE job_title = '数据分析师';", keyword: "where" }),
   ],
   3: [
     requirement({ goal: "查询金额低于 500 的订单编号、金额和状态。", sql: "SELECT id, total_amount, status FROM orders WHERE total_amount < 500;", keyword: "where" }),
@@ -57,14 +57,14 @@ export const chapterExtraTaskRequirements: Record<number, [TaskRequirement, Task
   ],
   9: [
     requirement({ goal: "统计 orders 表中的订单总数。", sql: "SELECT COUNT(*) AS order_count FROM orders;", keyword: "count" }),
-    requirement({ goal: "按状态统计 completed、pending 和 cancelled 订单数量。", sql: "SELECT status, COUNT(*) AS order_count FROM orders WHERE status IN ('completed', 'pending', 'cancelled') GROUP BY status;", keyword: "count" }),
+    requirement({ goal: "统计金额超过 1000 的订单数量。", sql: "SELECT COUNT(*) AS high_value_orders FROM orders WHERE total_amount > 1000;", keyword: "count" }),
   ],
   10: [
     requirement({ goal: "连接订单和客户，返回订单编号、客户名称和城市。", sql: "SELECT orders.id, customers.name, customers.city FROM orders INNER JOIN customers ON orders.customer_id = customers.id;", keyword: "join" }),
     requirement({ goal: "连接订单和客户，返回订单编号、客户名称、状态和金额。", sql: "SELECT orders.id, customers.name, orders.status, orders.total_amount FROM orders INNER JOIN customers ON orders.customer_id = customers.id;", keyword: "join" }),
   ],
   11: [
-    requirement({ goal: "查询员工姓名、岗位和直属上级姓名。", sql: "SELECT employee.name, employee.job_title, manager.name AS manager_name FROM employees employee LEFT JOIN employees manager ON employee.manager_id = manager.id;", keyword: "join" }),
+    requirement({ goal: "查询员工姓名、岗位和直属上级姓名。", sql: "SELECT employee.name, employee.job_title, manager.name AS manager_name FROM employees employee INNER JOIN employees manager ON employee.manager_id = manager.id;", keyword: "join" }),
     requirement({ goal: "查询直属上级为林予的员工姓名、部门和岗位。", sql: "SELECT employee.name, employee.department, employee.job_title FROM employees employee INNER JOIN employees manager ON employee.manager_id = manager.id WHERE manager.name = '林予';", keyword: "join" }),
   ],
   12: [

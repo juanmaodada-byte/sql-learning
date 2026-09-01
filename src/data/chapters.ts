@@ -226,7 +226,7 @@ chapters.push(
     id: 11, section: "basic", title: "查询员工直属上级", knowledgePoint: "自连接", characterId: "hr",
     story: "许宁举着一张打印好的组织架构图，一脸为难地晃过来：“公司要梳理汇报关系，可上下级全挤在 employees 一张表里——上级他也是员工啊。这……一张表能自己连自己吗？”她指着图上的虚线，“我就想看，每个员工的姓名，和他的直属上级姓名，一一对应起来。”你在心里打鼓：同一张表连自己，真能办到？",
     knowledge: "同一张表可以通过不同别名连接自己。",
-    requirement: { goal: "查询员工姓名和直属上级姓名。", initialSql: "", expectedSql: "SELECT employee.name, manager.name AS manager_name FROM employees employee LEFT JOIN employees manager ON employee.manager_id = manager.id;", hints: ["同一张 employees 表需要使用两个别名。", "员工的 manager_id 关联上级的 id。"], validationRules: [{ type: "requiredKeyword", keyword: "join" }], solutionExplanation: "employee 和 manager 是同一张 employees 表的两个角色，通过 manager_id 连接上级员工。" },
+    requirement: { goal: "查询员工姓名和直属上级姓名。", initialSql: "", expectedSql: "SELECT employee.name, manager.name AS manager_name FROM employees employee INNER JOIN employees manager ON employee.manager_id = manager.id;", hints: ["同一张 employees 表需要使用两个别名。", "员工的 manager_id 关联上级的 id。"], validationRules: [{ type: "requiredKeyword", keyword: "join" }], solutionExplanation: "employee 和 manager 是同一张 employees 表的两个角色，通过 manager_id 连接上级员工。" },
 },
 {
 id: 12, section: "basic", title: "找出下过单的城市", knowledgePoint: "DISTINCT", characterId: "sales",
