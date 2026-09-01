@@ -516,6 +516,7 @@ export function LessonPage({ chapter, isLocked, unlockAllTasks = false, onBack, 
   const [hintVisible, setHintVisible] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [schemaOpen, setSchemaOpen] = useState(false);
 
   // 让 ref 始终持有最新值：在 effect 中写入，而不是在渲染期写入。
   useEffect(() => {
@@ -684,6 +685,9 @@ export function LessonPage({ chapter, isLocked, unlockAllTasks = false, onBack, 
               <strong>{character.name}</strong>
               <span>{character.department} · {character.role}</span>
             </div>
+            <button className="schema-toggle" type="button" onClick={() => setSchemaOpen(true)}>
+              任务数据表
+            </button>
           </div>
           <p className="eyebrow">剧情任务</p>
           <h1>{activeChapter.title}</h1>
@@ -797,9 +801,13 @@ export function LessonPage({ chapter, isLocked, unlockAllTasks = false, onBack, 
             <ResultTable result={tableResult} />
           </div>
         </section>
-
-        <SchemaPanel tableNames={referencedTables} />
       </section>
+
+      <SchemaPanel
+        tableNames={referencedTables}
+        open={schemaOpen}
+        onClose={() => setSchemaOpen(false)}
+      />
     </main>
   );
 }
